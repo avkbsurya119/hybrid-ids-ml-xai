@@ -1,8 +1,11 @@
+# =====================================================
 # Python
+# =====================================================
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.env
 env/
 venv/
 .venv/
@@ -10,22 +13,54 @@ pip-wheel-metadata/
 dist/
 build/
 
-# Jupyter
-.ipynb_checkpoints
+# =====================================================
+# Jupyter / Experiments
+# =====================================================
+.ipynb_checkpoints/
+notebooks/
 
-# Data / models
+# =====================================================
+# Raw & Intermediate Data (NEVER commit)
+# =====================================================
 data/raw/
 data/processed/
-models/artifacts/
-*.parquet
-*.joblib
-*.pt
-*.bin
 
-# VSCode etc
+# =====================================================
+# Training-only outputs (ignore)
+# =====================================================
+models/checkpoints/
+models/raw/
+
+# =====================================================
+# ✅ Inference Artifacts (KEEP THESE)
+# =====================================================
+!models/artifacts/
+!models/artifacts/*.txt          # LightGBM model
+!models/artifacts/*.json         # transforms, thresholds
+!models/artifacts/*.pth          # autoencoder state
+!models/artifacts/*.pkl          # threshold, shap explainer
+!models/artifacts/*.joblib       # scaler, label encoder
+
+# =====================================================
+# Large / regenerable XAI files (optional to commit)
+# =====================================================
+models/artifacts/shap_background_sample.parquet
+models/artifacts/shap_explainer.pkl
+
+# =====================================================
+# Streamlit cache
+# =====================================================
+.streamlit/
+
+# =====================================================
+# IDEs
+# =====================================================
 .vscode/
 .idea/
 
+# =====================================================
 # OS
+# =====================================================
 Thumbs.db
 Desktop.ini
+.DS_Store
