@@ -3,7 +3,11 @@
 raw_data_dir: "data/raw"
 processed_dir: "data/processed"
 demo_dir: "data/demo"
-
+chunk_size: 100000
+drop_columns:
+  - Flow ID
+  - Source IP
+  - Destination IP
 # Chunking / sampling
 chunk_size: 200000      # rows per CSV chunk read
 percentile_sample_limit: 200000   # per-column max samples to accumulate for percentile calc
