@@ -1,8 +1,37 @@
-# Minimal config for preprocessing (expand later)
-raw_data_dir: "../data/raw"
-processed_dir: "../data/processed"
-chunk_size: 100000
-drop_columns:
-  - Flow ID
-  - Source IP
-  - Destination IP
+# preprocessor/config.yaml
+# Paths are relative to project root.
+raw_data_dir: "data/raw"
+processed_dir: "data/processed"
+demo_dir: "data/demo"
+
+# Chunking / sampling
+chunk_size: 200000      # rows per CSV chunk read
+percentile_sample_limit: 200000   # per-column max samples to accumulate for percentile calc
+
+# Percentiles to compute (list of floats 0-1)
+percentiles:
+  - 0.01
+  - 0.05
+  - 0.25
+  - 0.5
+  - 0.75
+  - 0.95
+  - 0.99
+  - 0.999
+
+# Clipping bounds: use percentiles from percentiles file
+clip_lower_pct: 0.01
+clip_upper_pct: 0.99
+
+# Heavytail detection thresholds
+heavytail_ratio_threshold: 10.0   # p99 / p50 > this => heavy-tail candidate
+heavytail_skew_threshold: 1.0     # sample skew > this => heavy-tail candidate
+min_unique_for_log: 3             # min distinct positive values to consider log1p
+
+# Output artifacts
+percentiles_path: "preprocessor/percentiles.json"
+transforms_path: "preprocessor/transforms.json"
+scaler_artifact: "models/artifacts/robust_scaler.joblib"
+
+# Which file pattern to write transformed data (parquet parts)
+transformed_prefix: "transformed"
