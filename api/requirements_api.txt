@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pydantic
+lightgbm
+joblib
+pandas
+numpy
+torch
+shap
