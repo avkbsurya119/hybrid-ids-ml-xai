@@ -1,0 +1,8 @@
+# Minimal config for preprocessing (expand later)
+raw_data_dir: "../data/raw"
+processed_dir: "../data/processed"
+chunk_size: 100000
+drop_columns:
+  - Flow ID
+  - Source IP
+  - Destination IP

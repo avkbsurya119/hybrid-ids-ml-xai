@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+env/
+venv/
+.venv/
+pip-wheel-metadata/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints
+
+# Data / models
+data/raw/
+data/processed/
+models/artifacts/
+*.parquet
+*.joblib
+*.pt
+*.bin
+
+# VSCode etc
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+Desktop.ini
