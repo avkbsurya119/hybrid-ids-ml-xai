@@ -1,5 +1,3 @@
-# api/main.py
-
 from fastapi import FastAPI
 from pydantic import BaseModel
 import numpy as np
@@ -14,62 +12,57 @@ class PredictRequest(BaseModel):
 
 
 app = FastAPI(
-    title="Hybrid NIDS ML + Autoencoder + SHAP API",
-    version="1.0"
+    title="Hybrid NIDS (Binary + Attack + Autoencoder)",
+    version="2.0"
 )
-
-
-@app.get("/")
-def root():
-    return {"status": "Hybrid NIDS API running"}
 
 
 @app.post("/predict")
 def predict(req: PredictRequest):
 
-    # input → dataframe → scaled → numpy array
-    X = preprocess_input(req.data, model_bundle)
+    # -------- Binary Stage --------
+    X_bin = preprocess_input(
+        [req.data],
+        model_bundle.binary_features,
+        model_bundle.scaler
+    )
 
-    # --------------------- LGBM PRED -----------------------
-    raw_pred = model_bundle.model.predict(X)
+    attack_prob = model_bundle.binary_model.predict(X_bin)[0]
+    is_attack = attack_prob > 0.5
 
-    if raw_pred.ndim == 2:            # multiclass
-        proba = raw_pred[0]
-        pred_class = int(np.argmax(proba))
-    else:                             # binary
-        proba = np.array([1 - raw_pred[0], raw_pred[0]])
-        pred_class = int(raw_pred[0] > 0.5)
+    result = {
+        "binary_decision": "ATTACK" if is_attack else "BENIGN",
+        "binary_confidence": float(attack_prob),
+        "attack_type": None,
+        "attack_confidence": None,
+        "anomaly_score": None,
+        "is_anomaly": None
+    }
 
-    label = model_bundle.label_encoder.inverse_transform([pred_class])[0]
+    # -------- Attack Type Stage --------
+    if is_attack:
+        X_att = preprocess_input(
+            [req.data],
+            model_bundle.attack_features,
+            model_bundle.scaler
+        )
 
-    # --------------------- AUTOENCODER ----------------------
-    ae_score = None
-    is_anomaly = None
+        probs = model_bundle.attack_model.predict(X_att)[0]
+        cls = int(np.argmax(probs))
 
+        result["attack_type"] = (
+            model_bundle.attack_label_encoder.inverse_transform([cls])[0]
+        )
+        result["attack_confidence"] = float(probs[cls])
+
+    # -------- Autoencoder --------
     if model_bundle.autoencoder is not None:
-
-        x_tensor = model_bundle.to_tensor(X)
-
         with torch.no_grad():
+            x_tensor = model_bundle.to_tensor(X_bin)
             recon = model_bundle.autoencoder(x_tensor)
             mse = ((x_tensor - recon) ** 2).mean().item()
 
-        ae_score = mse
-        is_anomaly = mse > model_bundle.autoencoder_threshold
+        result["anomaly_score"] = mse
+        result["is_anomaly"] = mse > model_bundle.autoencoder_threshold
 
-    # --------------------- SHAP -----------------------------
-    shap_values = None
-    if model_bundle.shap_explainer is not None:
-        try:
-            sv = model_bundle.shap_explainer(X)
-            shap_values = sv.values.tolist()
-        except:
-            shap_values = None
-
-    return {
-        "label": label,
-        "probabilities": {str(i): float(p) for i, p in enumerate(proba)},
-        "anomaly_score": ae_score,
-        "is_anomaly": is_anomaly,
-        "shap_values": shap_values
-    }
+    return result
