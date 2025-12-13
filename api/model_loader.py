@@ -67,8 +67,8 @@ class ModelBundle:
         self.autoencoder = None
         self.autoencoder_threshold = None
 
-        ae_state = ART / "autoencoder_state.pth"
-        ae_thr = ART / "autoencoder_threshold.pkl"
+        ae_state = ART / "autoencoder_model.pth"
+        ae_thr = ART / "autoencoder_threshold.json"
 
         if ae_state.exists() and ae_thr.exists():
             state = torch.load(ae_state, map_location="cpu")
@@ -79,7 +79,10 @@ class ModelBundle:
             ae.eval()
 
             self.autoencoder = ae
-            self.autoencoder_threshold = joblib.load(ae_thr)["threshold"]
+
+            # Load threshold from JSON
+            with open(ae_thr) as f:
+                self.autoencoder_threshold = json.load(f)["threshold"]
 
         print("✓ Model bundle ready")
 
