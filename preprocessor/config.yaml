@@ -34,7 +34,7 @@ min_unique_for_log: 3             # min distinct positive values to consider log
 
 # Output artifacts
 percentiles_path: "preprocessor/percentiles.json"
-transforms_path: "preprocessor/transforms.json"
+transforms_path: "models/artifacts/transforms.json"
 scaler_artifact: "models/artifacts/robust_scaler.joblib"
 
 # Which file pattern to write transformed data (parquet parts)

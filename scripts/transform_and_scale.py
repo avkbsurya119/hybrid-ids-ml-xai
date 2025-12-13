@@ -4,7 +4,7 @@ Apply clipping, heavy-tail detection + log1p, fit RobustScaler,
 and write transformed parquet files.
 
 Outputs:
- - preprocessor/transforms.json
+ - models/artifacts/transforms.json
  - models/artifacts/robust_scaler.joblib
  - data/processed/transformed_part*.parquet
 """
@@ -44,7 +44,7 @@ def main():
     processed_dir.mkdir(parents=True, exist_ok=True)
 
     percentiles_path = ROOT / cfg.get("percentiles_path", "preprocessor/percentiles.json")
-    transforms_path  = ROOT / cfg.get("transforms_path",  "preprocessor/transforms.json")
+    transforms_path  = ROOT / cfg.get("transforms_path",  "models/artifacts/transforms.json")
     scaler_path      = ROOT / cfg.get("scaler_artifact", "models/artifacts/robust_scaler.joblib")
 
     if not percentiles_path.exists():
