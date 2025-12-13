@@ -32,27 +32,36 @@ class AutoEncoder(nn.Module):
 class ModelBundle:
     def __init__(self):
 
+        # -------- Transforms (CRITICAL) --------
+        with open(ART / "transforms.json") as f:
+            self.transforms = json.load(f)
+
         # -------- Binary model --------
         print("✓ Loading binary model")
         self.binary_model = lgb.Booster(
             model_file=str(ART / "binary_lightgbm_model.txt")
         )
+
         with open(ART / "binary_feature_order.json") as f:
             self.binary_features = json.load(f)
+
 
         # -------- Attack classifier --------
         print("✓ Loading attack classifier")
         self.attack_model = lgb.Booster(
             model_file=str(ART / "attack_lightgbm_model.txt")
         )
+
         self.attack_label_encoder = joblib.load(
             ART / "attack_label_encoder.joblib"
         )
+
         with open(ART / "attack_feature_order.json") as f:
             self.attack_features = json.load(f)
 
+
         # -------- Shared scaler --------
-        self.scaler = joblib.load(ART / "scaler.joblib")
+        self.scaler = joblib.load(ART / "robust_scaler.joblib")
 
         # -------- Autoencoder --------
         self.autoencoder = None
@@ -61,7 +70,7 @@ class ModelBundle:
         ae_state = ART / "autoencoder_state.pth"
         ae_thr = ART / "autoencoder_threshold.pkl"
 
-        if ae_state.exists():
+        if ae_state.exists() and ae_thr.exists():
             state = torch.load(ae_state, map_location="cpu")
             input_dim = list(state.values())[0].shape[1]
 
@@ -78,4 +87,5 @@ class ModelBundle:
         return torch.tensor(X, dtype=torch.float32)
 
 
+# Global singleton
 model_bundle = ModelBundle()

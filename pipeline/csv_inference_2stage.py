@@ -1,11 +1,11 @@
-# pipeline/csv_inference_2stage.py
-
 import numpy as np
 import pandas as pd
+import torch
 
 from pipeline.csv_preprocessor import preprocess_csv
 
-ATTACK_THRESHOLD = 0.01  # calibrated
+# ✅ Calibrated from your observed distribution
+ATTACK_THRESHOLD = 0.01
 
 
 def run_2stage_csv_inference(
@@ -22,9 +22,12 @@ def run_2stage_csv_inference(
 ):
     """
     Full 2-stage IDS inference on RAW CSV.
+
+    Stage 1: BENIGN vs ATTACK
+    Stage 2: Attack type (only if ATTACK)
     """
 
-    # Preprocess ONCE per model
+    # ---------------- Preprocess ----------------
     X_bin = preprocess_csv(df_raw, bin_features, transforms, scaler)
     X_atk = preprocess_csv(df_raw, atk_features, transforms, scaler)
 
@@ -35,36 +38,35 @@ def run_2stage_csv_inference(
     for i, p_attack in enumerate(bin_probs):
 
         # ---------------- Stage 1: Binary ----------------
-        if p_attack <= ATTACK_THRESHOLD:
+        if p_attack < ATTACK_THRESHOLD:
             results.append({
                 "Final_Prediction": "BENIGN",
                 "Binary_Route": "BENIGN",
-                "Confidence": round(1 - p_attack, 4),
+                "Confidence": round(float(1 - p_attack), 4),
                 "Anomaly": False
             })
             continue
 
         # ---------------- Stage 2: Attack ----------------
         atk_probs = atk_model.predict(X_atk[i:i+1])[0]
-        cls = atk_probs.argmax()
+        cls = int(np.argmax(atk_probs))
 
         attack_label = atk_encoder.inverse_transform([cls])[0]
-        confidence = atk_probs[cls]
+        confidence = float(atk_probs[cls])
 
-        # ---------------- Autoencoder (optional) ----------
+        # ---------------- Autoencoder ----------------
         anomaly = False
-        if autoencoder is not None:
-            recon = autoencoder(
-                autoencoder.to_tensor(X_atk[i:i+1])
-            ).detach().numpy()
-
-            mse = np.mean((X_atk[i:i+1] - recon) ** 2)
-            anomaly = mse > ae_threshold
+        if autoencoder is not None and ae_threshold is not None:
+            with torch.no_grad():
+                x_tensor = torch.tensor(X_atk[i:i+1], dtype=torch.float32)
+                recon = autoencoder(x_tensor)
+                mse = torch.mean((x_tensor - recon) ** 2).item()
+                anomaly = mse > ae_threshold
 
         results.append({
             "Final_Prediction": attack_label,
             "Binary_Route": "ATTACK",
-            "Confidence": round(float(confidence), 4),
+            "Confidence": round(confidence, 4),
             "Anomaly": anomaly
         })
 

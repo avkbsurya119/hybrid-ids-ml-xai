@@ -1,68 +1,74 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-import numpy as np
-import torch
-
+from fastapi import FastAPI, HTTPException
+from api.inference_2stage import run_2stage_inference
 from api.model_loader import model_bundle
-from api.utils_preprocess import preprocess_input
-
-
-class PredictRequest(BaseModel):
-    data: dict
+from fastapi import UploadFile, File
+import pandas as pd
+from api.schemas import (
+    FlowInput,
+    PredictionResponse,
+    CSVPredictionResponse   # ✅ ADD THIS
+)
+from pipeline.csv_inference_2stage import run_2stage_csv_inference
 
 
 app = FastAPI(
-    title="Hybrid NIDS (Binary + Attack + Autoencoder)",
-    version="2.0"
+    title="Hybrid Network Intrusion Detection System",
+    version="1.0.0"
 )
 
 
-@app.post("/predict")
-def predict(req: PredictRequest):
+@app.get("/")
+def health():
+    return {"status": "IDS API running"}
 
-    # -------- Binary Stage --------
-    X_bin = preprocess_input(
-        [req.data],
-        model_bundle.binary_features,
-        model_bundle.scaler
-    )
 
-    attack_prob = model_bundle.binary_model.predict(X_bin)[0]
-    is_attack = attack_prob > 0.5
-
-    result = {
-        "binary_decision": "ATTACK" if is_attack else "BENIGN",
-        "binary_confidence": float(attack_prob),
-        "attack_type": None,
-        "attack_confidence": None,
-        "anomaly_score": None,
-        "is_anomaly": None
-    }
-
-    # -------- Attack Type Stage --------
-    if is_attack:
-        X_att = preprocess_input(
-            [req.data],
-            model_bundle.attack_features,
-            model_bundle.scaler
+@app.post("/predict", response_model=PredictionResponse)
+def predict(flow: FlowInput):
+    try:
+        return run_2stage_inference(
+            record=flow.features,
+            bundle=model_bundle
         )
 
-        probs = model_bundle.attack_model.predict(X_att)[0]
-        cls = int(np.argmax(probs))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-        result["attack_type"] = (
-            model_bundle.attack_label_encoder.inverse_transform([cls])[0]
+@app.post("/predict/csv", response_model=CSVPredictionResponse)
+def predict_csv(file: UploadFile = File(...)):
+    try:
+        # -------- Read CSV --------
+        df = pd.read_csv(file.file)
+        df = df.replace([float("inf"), float("-inf")], 0).fillna(0)
+
+        # -------- Run 2-stage inference --------
+        out = run_2stage_csv_inference(
+            df_raw=df,
+            bin_model=model_bundle.binary_model,
+            atk_model=model_bundle.attack_model,
+            atk_encoder=model_bundle.attack_label_encoder,
+            scaler=model_bundle.scaler,
+            transforms=model_bundle.transforms,
+            bin_features=model_bundle.binary_features,
+            atk_features=model_bundle.attack_features,
+            autoencoder=model_bundle.autoencoder,
+            ae_threshold=model_bundle.autoencoder_threshold
         )
-        result["attack_confidence"] = float(probs[cls])
 
-    # -------- Autoencoder --------
-    if model_bundle.autoencoder is not None:
-        with torch.no_grad():
-            x_tensor = model_bundle.to_tensor(X_bin)
-            recon = model_bundle.autoencoder(x_tensor)
-            mse = ((x_tensor - recon) ** 2).mean().item()
+        # -------- Summary --------
+        benign = (out["Final_Prediction"] == "BENIGN").sum()
+        attack = len(out) - benign
 
-        result["anomaly_score"] = mse
-        result["is_anomaly"] = mse > model_bundle.autoencoder_threshold
+        return {
+            "total_rows": len(out),
+            "attack_rows": attack,
+            "benign_rows": benign,
+            "results": out.rename(columns={
+                "Final_Prediction": "final_prediction",
+                "Binary_Route": "binary_route",
+                "Confidence": "confidence",
+                "Anomaly": "anomaly"
+            }).to_dict(orient="records")
+        }
 
-    return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

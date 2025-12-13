@@ -17,8 +17,6 @@ from pathlib import Path
 from pipeline.csv_inference_2stage import run_2stage_csv_inference
 from api.model_loader import model_bundle   # reuses autoencoder safely
 
-
-ROOT = Path.cwd()
 ART = ROOT / "models" / "artifacts"
 
 # ---------------- Load models ----------------
@@ -26,7 +24,7 @@ bin_model = lgb.Booster(model_file=str(ART / "binary_lightgbm_model.txt"))
 atk_model = lgb.Booster(model_file=str(ART / "attack_lightgbm_model.txt"))
 
 atk_encoder = joblib.load(ART / "attack_label_encoder.joblib")
-scaler = joblib.load(ART / "scaler.joblib")
+scaler = joblib.load(ART / "robust_scaler.joblib")
 
 with open(ART / "binary_feature_order.json") as f:
     bin_feats = json.load(f)

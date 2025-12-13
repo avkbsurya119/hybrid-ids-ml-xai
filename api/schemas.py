@@ -1,18 +1,30 @@
-from pydantic import BaseModel, Field
-from typing import Dict, List
+from pydantic import BaseModel
+from typing import Dict, Any, Optional
 
 
 class FlowInput(BaseModel):
-    data: Dict[str, float]
+    features: Dict[str, float]
 
 
 class PredictionResponse(BaseModel):
-    label: str
-    probabilities: Dict[str, float]
-    anomaly_score: float | None
-    is_anomaly: bool
+    binary_prediction: str
+    final_prediction: str
+    confidence: float
+    anomaly: bool
+
+from typing import List
+from pydantic import BaseModel
 
 
-class SHAPResponse(BaseModel):
-    shap_values: List[float]
-    expected_value: float
+class CSVRowPrediction(BaseModel):
+    final_prediction: str
+    binary_route: str
+    confidence: float
+    anomaly: bool
+
+
+class CSVPredictionResponse(BaseModel):
+    total_rows: int
+    attack_rows: int
+    benign_rows: int
+    results: List[CSVRowPrediction]
