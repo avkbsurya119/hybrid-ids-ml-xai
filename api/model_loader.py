@@ -37,7 +37,7 @@ class ModelBundle:
             self.transforms = json.load(f)
 
         # -------- Binary model --------
-        print("✓ Loading binary model")
+        print("[OK] Loading binary model")
         self.binary_model = lgb.Booster(
             model_file=str(ART / "binary_lightgbm_model.txt")
         )
@@ -47,7 +47,7 @@ class ModelBundle:
 
 
         # -------- Attack classifier --------
-        print("✓ Loading attack classifier")
+        print("[OK] Loading attack classifier")
         self.attack_model = lgb.Booster(
             model_file=str(ART / "attack_lightgbm_model.txt")
         )
@@ -84,7 +84,7 @@ class ModelBundle:
             with open(ae_thr) as f:
                 self.autoencoder_threshold = json.load(f)["threshold"]
 
-        print("✓ Model bundle ready")
+        print("[OK] Model bundle ready")
 
     def to_tensor(self, X):
         return torch.tensor(X, dtype=torch.float32)
