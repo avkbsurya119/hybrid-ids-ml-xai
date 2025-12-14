@@ -63,8 +63,8 @@ Bot, DDoS, DoS GoldenEye, DoS Hulk, DoS Slowhttptest, DoS slowloris, FTP-Patator
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/Hybrid-Network-Intrusion-Detection-System-ML-XAI.git
-   cd Hybrid-Network-Intrusion-Detection-System-ML-XAI
+   git clone https://github.com/avkbsurya119/hybrid-ids-ml-xai.git
+   cd hybrid-ids-ml-xai
    ```
 
 2. **Create Python virtual environment**
@@ -100,8 +100,8 @@ The recommended deployment method using Docker Compose.
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/Hybrid-Network-Intrusion-Detection-System-ML-XAI.git
-   cd Hybrid-Network-Intrusion-Detection-System-ML-XAI
+   git clone https://github.com/avkbsurya119/hybrid-ids-ml-xai.git
+   cd hybrid-ids-ml-xai
    ```
 
 2. **Build and start containers**
