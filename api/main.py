@@ -18,8 +18,21 @@ app = FastAPI(
 
 
 @app.get("/")
-def health():
+def root():
     return {"status": "IDS API running"}
+
+
+@app.get("/health")
+def health():
+    return {
+        "status": "healthy",
+        "service": "nids-api",
+        "models_loaded": {
+            "binary": model_bundle.binary_model is not None,
+            "attack": model_bundle.attack_model is not None,
+            "autoencoder": model_bundle.autoencoder is not None
+        }
+    }
 
 
 @app.post("/predict", response_model=PredictionResponse)

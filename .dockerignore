@@ -1,0 +1,70 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Claude CLI
+.claude/
+
+# Documentation
+*.md
+docs/
+
+# Logs
+*.log
+
+# Data (will be mounted as volumes)
+data/raw/
+data/demo/
+data/uploads/
+data/results/
+
+# Model backups
+models/backup*/
+
+# Testing
+debug*.py
+test_*.py
+*_test.py
+sanity_check*.py
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# OS
+Thumbs.db
+.DS_Store
