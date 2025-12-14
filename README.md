@@ -33,23 +33,83 @@ A production-ready, hybrid intrusion detection system combining **Machine Learni
 
 ## 🏗️ Architecture
 
+### System Architecture (Docker Deployment)
+
+```mermaid
+graph TB
+    User[👤 User] --> Streamlit[Streamlit UI<br/>Port 8501]
+    Streamlit --> API[FastAPI Backend<br/>Port 8000]
+
+    API --> Models[Model Bundle]
+
+    subgraph Models[Model Components]
+        Binary[Binary Classifier<br/>LightGBM]
+        Attack[Attack Classifier<br/>LightGBM]
+        Auto[Autoencoder<br/>PyTorch]
+        Scaler[RobustScaler]
+    end
+
+    API --> Binary
+    Binary -->|BENIGN| Results[Results + SHAP]
+    Binary -->|ATTACK| Attack
+    Attack --> Auto
+    Auto --> Results
+
+    Results --> Streamlit
+    Streamlit --> User
+
+    style Streamlit fill:#FF4B4B
+    style API fill:#009688
+    style Binary fill:#4CAF50
+    style Attack fill:#2196F3
+    style Auto fill:#9C27B0
 ```
-User Input (CSV)
-    ↓
-Preprocessing Pipeline (RobustScaler + Log1p Transforms)
-    ↓
-Binary Classifier (LightGBM) → BENIGN or ATTACK?
-    ↓ (if ATTACK)
-Attack Type Classifier (LightGBM) → 14 Attack Types
-    ↓
-Autoencoder Anomaly Detector (PyTorch) → Normal or Anomaly?
-    ↓
-Results + SHAP Explanations
+
+### ML Pipeline Flow
+
+```mermaid
+flowchart LR
+    CSV[CSV Upload] --> Preprocess[Preprocessing<br/>Log1p + RobustScaler]
+    Preprocess --> Binary{Binary Classifier<br/>BENIGN vs ATTACK}
+    Binary -->|BENIGN| Result1[BENIGN]
+    Binary -->|ATTACK| Multi[Attack Classifier<br/>14 Attack Types]
+    Multi --> Anomaly[Autoencoder<br/>Anomaly Detection]
+    Anomaly --> Result2[Attack Type +<br/>Anomaly Score]
+    Result1 --> SHAP[SHAP Explanations]
+    Result2 --> SHAP
+
+    style Binary fill:#4CAF50
+    style Multi fill:#2196F3
+    style Anomaly fill:#9C27B0
 ```
 
 ### Supported Attack Types
 
 Bot, DDoS, DoS GoldenEye, DoS Hulk, DoS Slowhttptest, DoS slowloris, FTP-Patator, Heartbleed, Infiltration, PortScan, SSH-Patator, Web Attack (Brute Force), Web Attack (SQL Injection), Web Attack (XSS)
+
+## 📊 Input Data Format
+
+The system expects CSV files with **78 network flow features** from the CICIDS2017 dataset format. The **Label** column is optional (for testing with ground truth).
+
+### Sample Input Data
+
+| Destination Port | Flow Duration | Total Fwd Packets | Total Backward Packets | Flow Bytes/s | Flow Packets/s | Fwd Packet Length Mean | ... (72 more features) | Label |
+|------------------|---------------|-------------------|------------------------|--------------|----------------|------------------------|------------------------|-------|
+| 80 | 120500 | 15 | 12 | 4520.5 | 45.2 | 128.5 | ... | BENIGN |
+| 443 | 85200 | 8 | 7 | 2340.8 | 23.4 | 95.3 | ... | BENIGN |
+| 80 | 2500 | 1500 | 5 | 1250000 | 8500 | 64.2 | ... | DDoS |
+| 22 | 45000 | 25 | 0 | 8920.3 | 89.2 | 102.7 | ... | SSH-Patator |
+| 80 | 3200 | 850 | 3 | 985000 | 5200 | 58.9 | ... | DoS Slowhttptest |
+
+### Key Features
+
+- **Flow-based features**: Duration, packet counts, byte counts
+- **Timing features**: Inter-arrival times (IAT), active/idle times
+- **Packet statistics**: Length mean/std/max/min, header lengths
+- **Protocol flags**: SYN, ACK, FIN, PSH, URG counts
+- **Behavioral metrics**: Bytes/s, Packets/s, Down/Up ratio
+
+**Note**: For production use (unlabeled data), simply omit the `Label` column. The system will generate predictions without requiring ground truth.
 
 ## 🛠️ Installation
 
